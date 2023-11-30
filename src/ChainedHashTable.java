@@ -165,6 +165,7 @@ public class ChainedHashTable<K,V> implements HashTable<K,V> {
       } // if reporter != null
       throw new IndexOutOfBoundsException("Invalid key: " + key);
     } else {
+      // loop through all elements in the bucket
       for (int i = 0; i < alist.size(); i++) {
         if (alist.get(i).key().equals(key)) {
           Pair<K,V> pair = alist.get(i);
@@ -172,9 +173,9 @@ public class ChainedHashTable<K,V> implements HashTable<K,V> {
             reporter.report("get(" + key + ") => " + pair.value());
           } // if reporter != null
           return pair.value();  
-        } // if
+        } // if we found the target key in the bucket
       } // for
-      return null;
+      return null; // if we did not find the key in the bucket
     } // get
   } // get(K)
 
@@ -200,6 +201,7 @@ public class ChainedHashTable<K,V> implements HashTable<K,V> {
   @SuppressWarnings("unchecked")
   public V set(K key, V value) {
     V result = null;
+
     // If there are too many entries, expand the table.
     if (this.size > (this.buckets.length * LOAD_FACTOR)) {
       expand();
@@ -210,19 +212,25 @@ public class ChainedHashTable<K,V> implements HashTable<K,V> {
     ArrayList<Pair<K,V>> alist = (ArrayList<Pair<K,V>>) this.buckets[index];
     // Special case: Nothing there yet
     if (alist == null) {
+      // Create a new empty array list at the index
       alist = new ArrayList<Pair<K,V>>();
       this.buckets[index] = alist;
     } // if
 
+    // loop through every element in the bucket at the index to check if the key
+    // is already existed
     for (int i = 0; i < alist.size(); i++) {
       if (alist.get(i).key().equals(key)) {
-        result = alist.get(i).value();
-        alist.set(i, new Pair<K,V>(key, value));
+        alist.set(i, new Pair<K,V>(key, value)); 
+        result = alist.get(i).value();  // the value we set to key
         return result;
       } // if
     } // for
+
+    // if the key is not being used before, we add a new pair for the key and the corresponding value to the bucket
     alist.add(new Pair<K,V>(key, value));
     ++this.size;
+
     // Report activity, if appropriate
     if (REPORT_BASIC_CALLS && (reporter != null)) {
       reporter.report("adding '" + key + ":" + value + "' to bucket " + index);
